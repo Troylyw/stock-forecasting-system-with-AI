@@ -1,11 +1,16 @@
+<<<<<<< HEAD
 # Temporary files
 *.tmp
 
 # Byte-compiled / optimized / DLL files
+=======
+# Python
+>>>>>>> ad52528e8b71072d782e879e0fefb8e3578d4c8a
 __pycache__/
 *.py[cod]
 *$py.class
 
+<<<<<<< HEAD
 # C extensions
 *.so
 
@@ -161,3 +166,55 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+=======
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+log/test.txt
+
+# Environment variables
+.env
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build files
+*.pdf
+*.mov
+*.mp4
+
+# Database
+*.sqlite
+*.db
+
+# Temporary files
+*.tmp
+*.temp 
+>>>>>>> ad52528e8b71072d782e879e0fefb8e3578d4c8a

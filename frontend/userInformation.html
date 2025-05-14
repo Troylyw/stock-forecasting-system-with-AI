@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Change Password & View Deposit</title>
+    <link rel="stylesheet" href="multipleStockAnalysis.css">
+</head>
+<body>
+<div id="navbar-container"></div>
+
+<h1>User information</h1>
+<div class="main-container">
+    <!-- 二级导航栏 -->
+    <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+        <button id="tab-sell" class="tab-btn" style="background:#bdbdbd;color:#333;">Sell Stock</button>
+        <button id="tab-password" class="tab-btn" style="background:#43a047;color:#fff;">Change Password</button>
+        <button id="tab-deposit" class="tab-btn" style="background:#bdbdbd;color:#333;">Deposit Amount</button>
+        <button id="tab-ai-agent" class="tab-btn" style="background:#bdbdbd;color:#333;" onclick="window.open('http://localhost:5001/', '_blank')">AI Agent</button>
+    </div>
+    <!-- Change Password 区域 -->
+    <div id="password-section">
+        <div class="container">
+            <h2>Change Password</h2>
+            <form id="change-password-form">
+                <label for="oldPassword">Old Password:</label>
+                <input type="password" id="oldPassword" placeholder="Enter your old password" required>
+                <label for="newPassword">New Password:</label>
+                <input type="password" id="newPassword" placeholder="Enter your new password" required>
+                <button type="submit">Change Password</button>
+            </form>
+            <div class="message" id="change-password-message"></div>
+        </div>
+    </div>
+    <!-- Deposit 区域 -->
+    <div id="deposit-section" style="display:none;">
+        <div class="container">
+            <h2>Deposit Amount</h2>
+            <div class="balance-info">
+                <h3>Current Balance: <span id="current-balance">Loading...</span></h3>
+            </div>
+            <form id="deposit-form">
+                <label for="amount">Amount:</label>
+                <input type="number" id="amount" placeholder="Enter amount to deposit" min="1" required>
+                <button type="submit">Deposit</button>
+            </form>
+            <div class="message" id="deposit-message"></div>
+        </div>
+    </div>
+    <!-- Sell Stock 区域 -->
+    <div id="sell-section" style="display:none;">
+        <div class="container">
+            <h2>Sell Stock</h2>
+            <p id="active-stocks-message"></p>
+            <div class="table-container">
+                <table id="active-stocks-table" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Stock Name</th>
+                            <th>Quantity</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-container {
+        margin: 20px 0;
+        overflow-x: auto;
+    }
+
+    #active-stocks-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    #active-stocks-table thead {
+        background-color: #43a047;
+        color: white;
+    }
+
+    #active-stocks-table th,
+    #active-stocks-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    #active-stocks-table tbody tr:hover {
+        background-color: #f5f5f5;
+    }
+
+    #active-stocks-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .sell-btn {
+        background-color: #e53935;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .sell-btn:hover {
+        background-color: #c62828;
+    }
+
+    .balance-info {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .balance-info h3 {
+        margin: 0;
+        color: #333;
+    }
+
+    #current-balance {
+        color: #43a047;
+        font-weight: bold;
+    }
+</style>
+
+<script>
+    // Change Password Form
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+
+        try {
+            const response = await fetch('http://localhost:3000/api/change-password', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ oldPassword, newPassword }),
+                credentials: 'include',
+            });
+            const result = await response.json();
+            const messageEl = document.getElementById('change-password-message');
+            if (result.success) {
+                messageEl.textContent = result.message;
+                messageEl.classList.remove('error');
+                alert("changing password successful")
+            } else {
+                messageEl.textContent = result.message;
+                messageEl.classList.add('error');
+            }
+        } catch (error) {
+            console.error('Error changing password:', error);
+            alert('Error changing password. Please try again later.');
+        }
+    });
+
+    // 获取用户余额的函数
+    async function fetchUserBalance() {
+        try {
+            console.log('Fetching user balance...');
+            const response = await fetch('http://localhost:3000/api/user-balance', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            });
+            console.log('Response status:', response.status);
+            const data = await response.json();
+            console.log('Response data:', data);
+            
+            if (data.success) {
+                // 确保balance是数字类型
+                const balance = parseFloat(data.balance);
+                if (isNaN(balance)) {
+                    console.error('Invalid balance value:', data.balance);
+                    document.getElementById('current-balance').textContent = 'Error: Invalid balance value';
+                    return;
+                }
+                document.getElementById('current-balance').textContent = `$${balance.toFixed(2)}`;
+            } else {
+                console.error('Error in response:', data.message);
+                document.getElementById('current-balance').textContent = `Error: ${data.message || 'Unknown error'}`;
+            }
+        } catch (error) {
+            console.error('Error fetching balance:', error);
+            document.getElementById('current-balance').textContent = `Error: ${error.message}`;
+        }
+    }
+
+    // Deposit Form
+    document.getElementById('deposit-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(document.getElementById('amount').value);
+
+        try {
+            const response = await fetch('http://localhost:3000/api/deposit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount }),
+                credentials: 'include',
+            });
+            const result = await response.json();
+            const messageEl = document.getElementById('deposit-message');
+            if (result.success) {
+                messageEl.textContent = result.message;
+                messageEl.classList.remove('error');
+                alert("deposit successful");
+                // 更新余额显示
+                fetchUserBalance();
+                // 清空输入框
+                document.getElementById('amount').value = '';
+            } else {
+                messageEl.textContent = result.message;
+                messageEl.classList.add('error');
+            }
+        } catch (error) {
+            console.error('Error processing deposit:', error);
+            alert('Error processing deposit. Please try again later.');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const messageEl = document.getElementById('active-stocks-message');
+        const tableEl = document.getElementById('active-stocks-table');
+        const tbodyEl = tableEl.querySelector('tbody');
+
+        try {
+            const response = await fetch('http://localhost:3000/api/active-stocks', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                messageEl.textContent = result.message;
+                messageEl.classList.add('success');
+                messageEl.classList.remove('error');
+
+                // fill the stock data
+                result.data.forEach(stock => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${stock.timestamp}</td>
+                        <td>${stock.stock_name}</td>
+                        <td>${stock.number}</td>
+                        <td>
+                            <button class="sell-btn" onclick="sellStock('${stock.timestamp}', ${stock.number})">
+                                Sell
+                            </button>
+                        </td>
+                    `;
+                    tbodyEl.appendChild(row);
+                });
+
+                tableEl.style.display = 'table';
+            } else {
+                messageEl.textContent = result.message || 'Failed to load active stocks';
+                messageEl.classList.add('error');
+                messageEl.classList.remove('success');
+            }
+        } catch (error) {
+            console.error('Error fetching active stocks:', error);
+            messageEl.textContent = 'Error fetching active stocks. Please try again later.';
+            messageEl.classList.add('error');
+            messageEl.classList.remove('success');
+        }
+    });
+
+    function sellStock(timestamp, maxQuantity) {
+        const sellQuantity = prompt(`Enter quantity to sell (max: ${maxQuantity}):`);
+        if (sellQuantity === null) return;
+        
+        const quantity = parseInt(sellQuantity);
+        if (isNaN(quantity) || quantity <= 0 || quantity > maxQuantity) {
+            alert('Please enter a valid quantity');
+            return;
+        }
+
+        // 直接发送销售请求
+        fetch('http://localhost:3000/api/sell-stock', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ timestamp, sellQuantity: quantity }),
+            credentials: 'include',
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                alert(`Success: ${data.message}. Sold for ${data.sellAmount.toFixed(2)} with real-time price ${data.realTimePrice.toFixed(2)}. Remaining: ${data.remainingQuantity}.`);
+                // 刷新页面并保持在sell stock模块
+                location.reload();
+            } else {
+                alert(`Error: ${data.error || 'Unknown error'}`);
+            }
+        })
+        .catch(error => {
+            alert('Error: Failed to connect to the server.');
+        });
+    }
+
+    window.onload = function() {
+        // 加载导航栏
+        fetch('navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-container').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Error loading navbar:', error);
+            });
+
+        // 默认显示sell stock模块
+        tabSell.style.background = '#43a047';
+        tabSell.style.color = '#fff';
+        tabPassword.style.background = '#bdbdbd';
+        tabPassword.style.color = '#333';
+        tabDeposit.style.background = '#bdbdbd';
+        tabDeposit.style.color = '#333';
+        passwordSection.style.display = 'none';
+        depositSection.style.display = 'none';
+        sellSection.style.display = '';
+    };
+
+    // tab切换逻辑
+    const tabPassword = document.getElementById('tab-password');
+    const tabDeposit = document.getElementById('tab-deposit');
+    const tabSell = document.getElementById('tab-sell');
+    const passwordSection = document.getElementById('password-section');
+    const depositSection = document.getElementById('deposit-section');
+    const sellSection = document.getElementById('sell-section');
+
+    tabPassword.onclick = function() {
+        tabPassword.style.background = '#43a047';
+        tabPassword.style.color = '#fff';
+        tabDeposit.style.background = '#bdbdbd';
+        tabDeposit.style.color = '#333';
+        tabSell.style.background = '#bdbdbd';
+        tabSell.style.color = '#333';
+        passwordSection.style.display = '';
+        depositSection.style.display = 'none';
+        sellSection.style.display = 'none';
+    };
+    tabDeposit.onclick = function() {
+        tabDeposit.style.background = '#43a047';
+        tabDeposit.style.color = '#fff';
+        tabPassword.style.background = '#bdbdbd';
+        tabPassword.style.color = '#333';
+        tabSell.style.background = '#bdbdbd';
+        tabSell.style.color = '#333';
+        passwordSection.style.display = 'none';
+        depositSection.style.display = '';
+        sellSection.style.display = 'none';
+        // 切换到deposit页面时获取余额
+        fetchUserBalance();
+    };
+    tabSell.onclick = function() {
+        tabSell.style.background = '#43a047';
+        tabSell.style.color = '#fff';
+        tabPassword.style.background = '#bdbdbd';
+        tabPassword.style.color = '#333';
+        tabDeposit.style.background = '#bdbdbd';
+        tabDeposit.style.color = '#333';
+        passwordSection.style.display = 'none';
+        depositSection.style.display = 'none';
+        sellSection.style.display = '';
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!-- navbar.html -->
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="nav-brand">
+            <span>Stock Analysis</span>
+        </div>
+        <ul class="navbar-links">  
+            <li><a href="singleStock.html"><i class="fas fa-chart-line"></i> Single Stock</a></li>
+            <li><a href="multipleStockAnalysis.html"><i class="fas fa-chart-bar"></i> Multiple Stocks</a></li>
+            <li><a href="userInformation.html"><i class="fas fa-user"></i> User Info & AI Agent</a></li>
+            <li><a href="login.html"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+</nav>
+
+<style>
+    .navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to right, #2c3e50, #3498db);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+    }
+
+    .nav-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+    }
+
+    .nav-brand {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .navbar-links {
+        display: flex;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        gap: 20px;
+    }
+
+    .navbar-links li a {
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .navbar-links li a:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .navbar-links li a i {
+        font-size: 1.1rem;
+    }
+</style>
+
+<!-- 添加 Font Awesome 图标库 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
