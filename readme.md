@@ -209,16 +209,18 @@ For the AI agent functionality, you need to configure the following API keys:
 1. Create a `.env` file in the `ai-agent/PromptCoder2/Stockagent` directory with:
 
 ```
+DEEPSEEK_API_KEY=your_deepseek_api_key
 OPENAI_API_KEY=your_openai_api_key
 ALPHA_VANTAGE_API_KEY=your_alpha_vantage_api_key
 ```
 
 You can obtain these API keys from:
 
+- DeepSeek API Key: https://platform.deepseek.com/
 - OpenAI API Key: https://platform.openai.com/api-keys
 - Alpha Vantage API Key: https://www.alphavantage.co/support/#api-key
 
-Note: Make sure to keep your API keys secure and never commit them to version control.
+Note: Make sure to keep your API keys secure and never commit them to version control. The `.env` file is already included in `.gitignore`.
 
 ## Contributing
 
