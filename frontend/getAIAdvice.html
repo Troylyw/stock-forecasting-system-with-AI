@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
+</head>
+<body>
+<div id="navbar-container"></div>
+
+<h1>AI Chat</h1>
+
+<div class="chat-container">
+    <div id="chat-box" class="chat-box">
+        <!-- AI messages will appear here -->
+    </div>
+
+    <input type="text" id="user-message" placeholder="Enter your message" />
+    <button id="send-message-btn">Send</button>
+    <div id="typing-indicator" style="display: none;">AI is typing...</div>
+</div>
+
+<script>
+    // Function to add user message to chat box
+    function addMessage(content, sender = 'user') {
+        const messageEl = document.createElement('div');
+        messageEl.classList.add(sender);
+        messageEl.textContent = content;
+        document.getElementById('chat-box').appendChild(messageEl);
+    }
+
+    // Function to send user message and get AI response
+    async function sendMessage() {
+        const userMessage = document.getElementById('user-message').value;
+        if (!userMessage) return;  // Don't send empty messages
+        // Display user message
+        addMessage(userMessage, 'user');
+        document.getElementById('user-message').value = ''; // Clear input field
+
+        // Show typing indicator for AI
+        document.getElementById('typing-indicator').style.display = 'block';
+
+        try {
+            const response = await fetch('http://localhost:3000/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message: userMessage }),
+            });
+            
+            const result = await response.json();
+
+            if (response.ok) {
+                const aiResponse = result.response;
+                // Hide typing indicator and show AI's response
+                document.getElementById('typing-indicator').style.display = 'none';
+                addMessage(aiResponse, 'ai');
+            } else {
+                throw new Error(result.error || 'Failed to get response');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('typing-indicator').style.display = 'none';
+            addMessage('Error: Could not contact AI server.', 'ai');
+        }
+    }
+
+    // Add event listener to send message when button is clicked
+    document.getElementById('send-message-btn').addEventListener('click', sendMessage);
+
+    // Send message when pressing Enter key
+    document.getElementById('user-message').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    window.onload = function() {
+        fetch('navbar.html')
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('navbar-container').innerHTML = data;
+            })
+            .catch(error => {
+                console.error('Error loading navbar:', error);
+            });
+    };
+</script>
+
+</body>
+</html>

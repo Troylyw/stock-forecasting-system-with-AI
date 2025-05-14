@@ -2,323 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Stock Analysis</title>
-    <style>
-        /* Set the investment advice text to red font. */
-        #investment-advice {
-            color: red;
-            font-weight: bold;
-        }
-    </style>
-    <!-- introduce Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="indexStyle1.css">
-</head>
-
-<body>
-
-<div id="navbar-container"></div>
-<div class="main-container">
-    <div class="stock-analysis">
-<h2>Single Stock Analysis</h2>
-
-<!-- Investment horizon selection -->
-<label for="investment-period">Investment Horizon:</label>
-<select id="investment-period" required>
-    <option value="1">1 Year</option>
-    <option value="2">2 Years</option>
-    <option value="5">5 Years</option>
-</select><br><br>
-
-<!-- Stock ticker selection box -->
-<label for="stock-ticker">Select Stock Ticker:</label>
-<select id="stock-ticker" required>
-    <option value="">Loading...</option>
-</select><br><br>
-
-<!-- Initial investment amount input box -->
-<label for="capital">Initial Capital:</label>
-<input type="number" id="capital" placeholder="Enter your initial capital" required><br><br>
-
-<!-- submit button -->
-<button id="submit-btn">Get Investment Advice and RealTimePrice</button><br><br>
-
-<!-- view the trend -->
-<button id="trend-btn">View Trend Chart</button><br><br>
-
-<!-- investment advice -->
-<div id="investment-advice">
-
-</div>
-
-        <canvas id="trend-chart" style="width: 60%; height: 300px;"></canvas>
-
-    </div>
-
-<div class="stock-purchase">
-<h2>Single Stock Purchase</h2>
-<form id="buy-stock-form">
-    <label for="stock-symbol">Stock Symbol:</label>
-    <input type="text" id="stock-symbol" placeholder="Enter stock symbol (e.g., huohuf1y)" required>
-
-    <label for="stock-quantity">Quantity:</label>
-    <input type="number" id="stock-quantity" placeholder="Enter quantity to buy" min="1" required>
-
-    <button type="submit">Buy Stock</button>
-</form>
-<div class="message" id="buy-stock-message"></div>
-</div>
-</div>
-
-
-
-<script>
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            // Send a GET request to `/api/stocks` on the backend to retrieve stock data.
-            const response = await fetch('http://localhost:3000/api/stocks', {
-                method: "GET",
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            const result = await response.json();
-
-            if (result.success) {
-
-                const stockList = result.stocks;
-
-                const stockSelect = document.getElementById("stock-ticker");
-
-                stockSelect.innerHTML = stockList.map(stock => `<option value="${stock}">${stock}</option>`).join('');
-            }
-            // else {
-            //     console.error(result.message);
-            //     alert("Cannot load the ticker");
-            // }
-        } catch (error) {
-            console.error("error in fetching stock ticker：", error);
-            alert("error in fetching stock ticker");
-        }
-    });
-
-    document.getElementById('submit-btn').addEventListener('click', async () => {
-        const investmentPeriod = document.getElementById('investment-period').value;
-        const stockTicker = document.getElementById('stock-ticker').value; // 获取选择的股票代码
-        const initialCapital = parseFloat(document.getElementById('capital').value); // 获取初始资本
-
-        if (!stockTicker) {
-            alert("Please select a stock ticker.");
-            return;
-        }
-
-        if (isNaN(initialCapital) || initialCapital <= 0) {
-            alert("Please enter a valid initial capital.");
-            return;
-        }
-
-        // get investment advice from backend
-        try {
-            const response = await fetch(`http://localhost:3000/api/advice?stock=${stockTicker}&period=${investmentPeriod}&capital=${initialCapital}`);
-            const advice = await response.json();
-
-            if (advice.success) {
-
-                // show investment advice
-                document.getElementById('investment-advice').innerHTML = `
-                    <strong>Investment Strategy:</strong> ${advice.strategy} <br>
-                    <strong>Suggested Trading Frequency:</strong> ${advice.frequency} <br>
-                    <strong>Buy Quantity:</strong> ${advice.buyQuantity} shares <br>
-                    <strong>Real Price:</strong> ${advice.currentPrice} shares <br>
-                `;
-            } else {
-                document.getElementById('investment-advice').innerHTML = 'Could not fetch investment advice.';
-            }
-        } catch (error) {
-            console.error("Error fetching investment advice:", error);
-            alert("Failed to get investment advice.");
-        }
-    });
-
-    let currentChart = null;
-
-    document.getElementById('trend-btn').addEventListener('click', async () => {
-        const stockTicker = document.getElementById('stock-ticker').value;
-
-        if (!stockTicker) {
-            alert("Please select a stock ticker.");
-            return;
-        }
-
-        // if there is a chart hide it
-        if (currentChart) {
-            currentChart.destroy();
-            document.getElementById('trend-chart').style.display = 'none';
-            currentChart = null;
-
-            document.getElementById('trend-btn').textContent = 'View Trend Chart';
-            return;
-        }
-
-        try {
-            const response = await fetch(`http://localhost:3000/api/stock-trend?stock=${stockTicker}`);
-            const trendData = await response.json();
-
-            if (trendData.success) {
-                const dates = trendData.data.map(item => {
-                    const rawDate = item.date;
-                    return `${rawDate.slice(0, 4)}-${rawDate.slice(4, 6)}-${rawDate.slice(6, 8)}`;
-                });
-                const prices = trendData.data.map(item => item.price);
-
-                // get canvas text
-                const ctx = document.getElementById('trend-chart').getContext('2d');
-
-                // create new chart
-                currentChart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: dates,
-                        datasets: [{
-                            label: 'Closing Prices',
-                            data: prices,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            borderWidth: 2,
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                display: true,
-                                position: 'top',
-                            },
-                        },
-                        scales: {
-                            x: {
-                                title: {
-                                    display: true,
-                                    text: 'Date',
-                                },
-                                ticks: {
-                                    autoSkip: true,
-                                    maxTicksLimit: 10,
-                                    callback: function(value, index, ticks) {
-                                        // Only display specific intervals of dates (e.g., show one date every 5 dates).
-                                        if (index % 5 === 0) {
-                                            return this.getLabelForValue(value);
-                                        }
-                                        return null;
-                                    },
-                                },
-                            },
-                            y: {
-                                title: {
-                                    display: true,
-                                    text: 'Price',
-                                },
-                            },
-                        },
-                    },
-
-                });
-
-                // show the chart
-                document.getElementById('trend-chart').style.display = 'block';
-
-                // update the button to "Hide Chart"
-                document.getElementById('trend-btn').textContent = 'Hide Chart';
-
-            } else {
-                alert('Failed to fetch trend data.');
-            }
-        } catch (error) {
-            console.error("Error fetching trend data:", error);
-            alert("Failed to get trend data.");
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            // Send a GET request to `/api/stocks` on the backend to fetch stock data.
-            const response = await fetch('http://localhost:3000/api/multiplestock-analysis', {
-                method: "GET",
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-
-            // analyze JSON data
-            const result = await response.json();
-
-            if (result.success) {
-
-                const stockList = result.stocks;
-
-                const stockSelect = document.getElementById("stock-ticker");
-
-                stockSelect.innerHTML = stockList.map(stock => `<option value="${stock}">${stock}</option>`).join('');
-            }
-        } catch (error) {
-            console.error("error in fetching stock ticker：", error);
-            alert("error in fetching stock ticker");
-        }
-    });
-
-    document.getElementById('buy-stock-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const symbol = document.getElementById('stock-symbol').value.trim();
-        const quantity = parseInt(document.getElementById('stock-quantity').value);
-
-        try {
-            const response = await fetch('http://localhost:3000/api/buy-stock', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ symbol, quantity }),
-            });
-
-            const result = await response.json();
-            const messageEl = document.getElementById('buy-stock-message');
-
-            if (response.ok) {
-                messageEl.textContent = result.message;
-                messageEl.classList.remove('error');
-            } else {
-                messageEl.textContent = result.error || result.message || 'Error buying stock.';
-                messageEl.classList.add('error');
-            }
-
-            if (result.data) {
-                console.log('Transaction details:', result.data);
-            }
-        } catch (error) {
-            console.error('Error buying stock:', error);
-            alert('Error buying stock. Please try again later.');
-        }
-    });
-
-    window.onload = function() {
-
-        // Dynamically load the navigation bar.
-        fetch('navbar.html')
-            .then(response => response.text())
+    <title>Stock Analysis - Redirecting</title>
+    <script>
+        // 检查用户是否已登录
+        window.onload = function() {
+            console.log('Checking login status...');
+            // 检查是否有登录状态
+            fetch('http://localhost:3000/api/check-login', {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
             .then(data => {
-
-                document.getElementById('navbar-container').innerHTML = data;
+                console.log('Login check response:', data);
+                if (data.loggedIn) {
+                    console.log('User is logged in, redirecting to singleStock.html');
+                    window.location.href = 'singleStock.html';
+                } else {
+                    console.log('User is not logged in, redirecting to login.html');
+                    window.location.href = 'login.html';
+                }
             })
             .catch(error => {
-                console.error('Error loading navbar:', error);
+                console.error('Error checking login status:', error);
+                // 如果发生错误，默认跳转到登录页面
+                window.location.href = 'login.html';
             });
-    };
-
-</script>
-
+        };
+    </script>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        .loading {
+            text-align: center;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <h2>Redirecting...</h2>
+        <div class="spinner"></div>
+        <p>Please wait while we redirect you to the appropriate page.</p>
+    </div>
 </body>
 </html>

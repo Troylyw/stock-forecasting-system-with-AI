@@ -79,5 +79,71 @@ router.put('/change-password', async (req, res) => {
         res.status(500).send('Error updating password.');
     }
 });
+
+// 获取用户余额
+router.get('/user-balance', async (req, res) => {
+    const username1 = sharedState.getUsername();
+    console.log('Getting balance for user:', username1);
+    
+    if (!username1) {
+        console.error('No username found in sharedState');
+        return res.status(401).json({ 
+            success: false, 
+            message: 'User not logged in' 
+        });
+    }
+
+    try {
+        const connection = await pool.getConnection();
+        console.log('Database connection established');
+        
+        const [user] = await connection.query('SELECT balance FROM users WHERE email = ?', [username1]);
+        console.log('Query result:', user);
+        
+        connection.release();
+        
+        if (user.length === 0) {
+            console.error('User not found in database:', username1);
+            return res.json({ 
+                success: false, 
+                message: 'User not found in database' 
+            });
+        }
+        
+        // 确保balance是数字类型
+        const balance = parseFloat(user[0].balance);
+        if (isNaN(balance)) {
+            console.error('Invalid balance value in database:', user[0].balance);
+            return res.json({
+                success: false,
+                message: 'Invalid balance value in database'
+            });
+        }
+        
+        console.log('Balance retrieved successfully:', balance);
+        return res.json({ 
+            success: true, 
+            balance: balance 
+        });
+    } catch (err) {
+        console.error('Error fetching user balance:', err);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error fetching user balance',
+            error: err.message 
+        });
+    }
+});
+
+// 检查登录状态
+router.get('/check-login', (req, res) => {
+    const username = sharedState.getUsername();
+    console.log('Checking login status for:', username);
+    res.json({ 
+        loggedIn: !!username,
+        username: username 
+    });
+});
+
 module.exports = router;
 

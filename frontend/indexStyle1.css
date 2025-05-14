@@ -1,109 +1,131 @@
 /* indexStyle.css */
 
-
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f9;
+    background-color: #ede7f6; /* 淡紫色背景 */
     margin: 0;
-    padding: 0;
+    padding: 20px;
 }
 
 h2 {
-    text-align: left;
-    color: #333;
+    color: #283593;
+    font-size: 24px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #c5cae9;
+    padding-bottom: 10px;
 }
 
 label {
-    display: inline-block;
-    width: 150px;
-    font-weight: bold;
-    color: #555;
+    display: block;
+    margin: 15px 0 5px;
+    color: #3949ab;
+    font-weight: 500;
 }
 
-input, select {
-    width: 200px;
-    padding: 8px;
-    margin: 5px 0 15px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+select, input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 2px solid #b39ddb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+    background-color: #f3e5f5;
+}
+
+select:focus, input:focus {
+    outline: none;
+    border-color: #7e57c2;
+    box-shadow: 0 0 0 3px rgba(126, 87, 194, 0.1);
 }
 
 button {
-    background-color: #007BFF;
+    background-color: #43a047; /* 绿色按钮 */
     color: white;
+    padding: 12px 24px;
     border: none;
-    padding: 10px 15px;
-    margin: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    border-radius: 5px;
-    font-size: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    margin: 10px 0;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #2e7031;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(67, 160, 71, 0.15);
 }
 
 #investment-advice {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    padding: 10px;
-    margin-top: 10px;
-    border-radius: 5px;
-}
-
-form {
-    max-width: 500px;
-    margin: 20px auto;
+    background-color: #fffde7; /* 柔和淡黄 */
     padding: 20px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin: 20px 0;
+    color: #6d4c41;
+    font-weight: 500;
+    line-height: 1.6;
 }
 
-.main-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 20px;
-    margin: 20px;
-}
-
-.stock-analysis,
-.stock-purchase {
-    flex: 1;
-    max-width: 45%;
-}
-
-.stock-purchase {
-    border-left: 2px solid #ddd;
-    padding-left: 20px;
-}
-.stock-analysis, .stock-purchase {
+#trend-chart {
+    background-color: #f3e5f5;
     padding: 20px;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin: 20px 0;
 }
 
 .message {
     margin-top: 15px;
     padding: 10px;
-    border-radius: 5px;
-    font-weight: bold;
-    text-align: center;
+    border-radius: 6px;
+    font-weight: 500;
 }
 
 .message.error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
 }
 
 .message.success {
     background-color: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
+}
+
+form {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #ede7f6;
+    border: 1px solid #b39ddb;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(126, 87, 194, 0.08);
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f3e5f5; /* 主内容区淡紫色 */
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(126, 87, 194, 0.08);
+}
+
+.stock-analysis,
+.stock-purchase {
+    background-color: #ede7f6;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(126, 87, 194, 0.05);
+}
+
+.stock-purchase {
+    border-left: 2px solid #b39ddb;
+    padding-left: 20px;
 }
 
 form label {
@@ -124,19 +146,36 @@ canvas {
 }
 
 #navbar-container {
-    background-color: #333;
-    color: white;
-    padding: 10px 20px;
-    font-size: 18px;
+    background-color: #1976d2; /* 顶部蓝色 */
+    padding: 15px 0;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.15);
 }
 
 #navbar-container a {
-    color: white;
+    color: #ffffff;
     text-decoration: none;
-    padding: 10px 15px;
+    padding: 10px 20px;
+    margin: 0 10px;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
 }
 
 #navbar-container a:hover {
-    background-color: #575757;
-    border-radius: 5px;
+    background-color: #1565c0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .main-container {
+        padding: 15px;
+    }
+    
+    .stock-analysis, .stock-purchase {
+        padding: 15px;
+    }
+    
+    button {
+        width: 100%;
+    }
 }

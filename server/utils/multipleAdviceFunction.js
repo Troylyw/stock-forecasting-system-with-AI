@@ -68,18 +68,33 @@ function calculateStandardDeviation(returns) {
 
 // calculate correlation
 function calculateCorrelation(returns1, returns2) {
-    return math.corr(returns1, returns2);
+    const minLength = Math.min(returns1.length, returns2.length);
+    const adjustedReturns1 = returns1.slice(0, minLength);
+    const adjustedReturns2 = returns2.slice(0, minLength);
+
+    return math.corr(adjustedReturns1, adjustedReturns2);
 }
 
-// Mean-variance optimization (simple version: the goal is to minimize risk).
-function meanVarianceOptimization(stocksData) {
+// Mean-variance optimization with Sharpe Ratio
+function meanVarianceOptimization(stocksData, marketData) {
+    // Calculate returns for all stocks
     const returns = stocksData.map(stock => calculateReturns(stock.prices));
+    
+    // Calculate standard deviation (risk)
     const risks = stocksData.map(stock => calculateStandardDeviation(returns[stocksData.indexOf(stock)]));
+    
+    // Calculate Sharpe Ratios
+    const riskFreeRate = 0.02; // 2% risk-free rate
+    const sharpeRatios = returns.map(stockReturns => {
+        const meanReturn = math.mean(stockReturns);
+        const stdDev = math.std(stockReturns);
+        return stdDev === 0 ? 0 : (meanReturn - riskFreeRate) / stdDev;
+    });
 
     const n = stocksData.length;
     const correlationMatrix = [];
 
-    // Calculate the correlation matrix between stocks.
+    // Calculate the correlation matrix between stocks
     for (let i = 0; i < n; i++) {
         let row = [];
         for (let j = 0; j < n; j++) {
@@ -87,42 +102,89 @@ function meanVarianceOptimization(stocksData) {
                 row.push(1);
             } else {
                 const correlation = calculateCorrelation(returns[i], returns[j]);
-                row.push(correlation);  // store the correlation
+                row.push(correlation);
             }
         }
         correlationMatrix.push(row);
     }
 
-    // When calculating the initial weight of each stock, consider the risk.
+    // Calculate initial weights considering risk and Sharpe Ratio
     const totalRisk = risks.reduce((acc, risk) => acc + risk, 0);
-    const initialWeights = risks.map(risk => risk / totalRisk);  // Distribute the initial weights based on risk.
+    const initialWeights = risks.map((risk, index) => {
+        // Risk adjustment
+        const riskAdjustment = risk / totalRisk;
+        
+        // Sharpe Ratio adjustment
+        const sharpeAdjustment = 1 + (sharpeRatios[index] / 2);
+        
+        // Combine adjustments
+        return riskAdjustment * sharpeAdjustment;
+    });
 
-    // Adjust the weights further based on correlation.
+    // Adjust weights based on correlation
     const adjustedWeights = initialWeights.map((weight, index) => {
-        // Adjust the weights individually based on correlation.
         let adjustedWeight = weight;
-
         for (let j = 0; j < n; j++) {
             if (index !== j) {
-                adjustedWeight *= (1 - Math.abs(correlationMatrix[index][j]));  // Adjust the weights based on correlation.
+                adjustedWeight *= (1 - Math.abs(correlationMatrix[index][j]));
             }
         }
         return adjustedWeight;
     });
 
-    // Calculate the sum of the adjusted weights.
+    // Normalize weights
     const totalAdjustedWeight = adjustedWeights.reduce((acc, weight) => acc + weight, 0);
-
-    // Normalize the weights so that their total sum is 1 or 100%
     const finalWeights = adjustedWeights.map(weight => weight / totalAdjustedWeight);
 
-    // return the optimized weights
     return finalWeights;
 }
+
+// AI prediction function for optimal weights
+async function predictOptimalWeights(stocksData) {
+    try {
+        // Prepare data for AI prediction
+        const features = stocksData.map(stock => ({
+            returns: calculateReturns(stock.prices),
+            risk: calculateStandardDeviation(calculateReturns(stock.prices)),
+            sharpeRatio: calculateSharpeRatio(calculateReturns(stock.prices))
+        }));
+
+        // Call AI model for prediction
+        const response = await fetch('http://localhost:3000/api/ai-predict', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ features })
+        });
+
+        if (!response.ok) {
+            throw new Error('AI prediction failed');
+        }
+
+        const prediction = await response.json();
+        return prediction.weights;
+    } catch (error) {
+        console.error('Error in AI prediction:', error);
+        // Fallback to traditional optimization if AI prediction fails
+        return meanVarianceOptimization(stocksData);
+    }
+}
+
+// Helper function to calculate Sharpe Ratio
+function calculateSharpeRatio(returns, riskFreeRate = 0.02) {
+    if (!returns || returns.length === 0) return 0;
+    const meanReturn = math.mean(returns);
+    const stdDev = math.std(returns);
+    return stdDev === 0 ? 0 : (meanReturn - riskFreeRate) / stdDev;
+}
+
 module.exports = {
     fillMissingDates,
     calculateReturns,
     calculateStandardDeviation,
     calculateCorrelation,
-    meanVarianceOptimization
+    meanVarianceOptimization,
+    predictOptimalWeights,
+    calculateSharpeRatio
 };

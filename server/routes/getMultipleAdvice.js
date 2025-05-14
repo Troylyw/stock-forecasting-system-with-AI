@@ -7,7 +7,8 @@ const {
     calculateReturns,
     calculateStandardDeviation,
     calculateCorrelation,
-    meanVarianceOptimization
+    meanVarianceOptimization,
+    predictOptimalWeights
 } = require('../utils/multipleAdviceFunction');
 
 router.get('/portfolio-recommendation', (req, res) => {
@@ -170,64 +171,91 @@ router.get('/multiplestock-analysis', (req, res) => {
 
     const tickers = stockTickers.split(',');
     const stocksData = [];
+    const marketData = []; // Add market data array
     const startDate = 20190102;
 
     let count = 0;
     const allDates = new Set();
 
+    // First, read market data (assuming market index data is available)
     fs.createReadStream(__dirname + '/output.csv')
         .pipe(csv())
-        .on('headers', (headers) => {
-
-        });
-
-    tickers.forEach(ticker => {
-        const stockData = [];
-        fs.createReadStream(__dirname + '/output.csv')
-            .pipe(csv())
-            .on('data', (row) => {
-                if (row['DATE/TICKER'] && row[ticker]) {
-                    const price = parseFloat(row[ticker]);
-                    if (!isNaN(price)) {
-                        const rowDate = parseInt(row['DATE/TICKER'], 10);
-
-                        if (rowDate >= startDate) {
-                            stockData.push({ date: rowDate, price });
-                            allDates.add(rowDate);  // add date to the set
-                        }
+        .on('data', (row) => {
+            if (row['DATE/TICKER'] && row['MARKET']) { // Assuming 'MARKET' is the column for market index
+                const price = parseFloat(row['MARKET']);
+                if (!isNaN(price)) {
+                    const rowDate = parseInt(row['DATE/TICKER'], 10);
+                    if (rowDate >= startDate) {
+                        marketData.push({ date: rowDate, price });
+                        allDates.add(rowDate);
                     }
                 }
-            })
-            .on('end', () => {
-                if (stockData.length === 0) {
-                    return res.json({ success: false, message: `No data available for stock ${ticker} after 2019.` });
-                }
+            }
+        })
+        .on('end', () => {
+            // Then process individual stocks
+            tickers.forEach(ticker => {
+                const stockData = [];
+                fs.createReadStream(__dirname + '/output.csv')
+                    .pipe(csv())
+                    .on('data', (row) => {
+                        if (row['DATE/TICKER'] && row[ticker]) {
+                            const price = parseFloat(row[ticker]);
+                            if (!isNaN(price)) {
+                                const rowDate = parseInt(row['DATE/TICKER'], 10);
+                                if (rowDate >= startDate) {
+                                    stockData.push({ date: rowDate, price });
+                                    allDates.add(rowDate);
+                                }
+                            }
+                        }
+                    })
+                    .on('end', () => {
+                        if (stockData.length === 0) {
+                            return res.json({ success: false, message: `No data available for stock ${ticker} after 2019.` });
+                        }
 
-                // fill missing date
-                fillMissingDates(stockData, allDates);
+                        fillMissingDates(stockData, allDates);
 
-                stocksData.push({
-                    ticker: ticker,
-                    prices: stockData.map(data => data.price),
-                    dates: stockData.map(data => data.date)
-                });
+                        stocksData.push({
+                            ticker: ticker,
+                            prices: stockData.map(data => data.price),
+                            dates: stockData.map(data => data.date)
+                        });
 
-                count++;
+                        count++;
 
-                // If all stock data has been processed, perform portfolio analysis.
-                if (count === tickers.length) {
-                    const portfolioWeights = meanVarianceOptimization(stocksData);
-                    res.json({
-                        success: true,
-                        portfolioWeights: portfolioWeights // return portfolio weights
+                        if (count === tickers.length) {
+                            // Get traditional optimization weights
+                            const traditionalWeights = meanVarianceOptimization(stocksData, { prices: marketData.map(d => d.price) });
+                            
+                            // Get AI-optimized weights
+                            predictOptimalWeights(stocksData)
+                                .then(aiWeights => {
+                                    res.json({
+                                        success: true,
+                                        portfolioWeights: traditionalWeights,
+                                        aiPortfolioWeights: aiWeights
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Error in AI prediction:', error);
+                                    // If AI prediction fails, return only traditional weights
+                                    res.json({
+                                        success: true,
+                                        portfolioWeights: traditionalWeights,
+                                        aiPortfolioWeights: traditionalWeights,
+                                        message: 'AI optimization failed, using traditional weights instead'
+                                    });
+                                });
+                        }
+                    })
+                    .on('error', (err) => {
+                        console.error(err);
+                        res.json({ success: false, message: 'Error reading stock data.' });
                     });
-                }
-            })
-            .on('error', (err) => {
-                console.error(err);
-                res.json({ success: false, message: 'Error reading stock data.' });
             });
-    });
+        });
 });
 
 
